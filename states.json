@@ -6,6 +6,12 @@
       "priority_range": [3650, 3750],
       "priority_states": [3683, 3723, 3750]
     },
+    "latest_state": {
+      "number": 4600,
+      "opened_utc": "2026-08-07T20:15:00Z",
+      "checked_utc": "2026-08-08T11:23:00Z",
+      "source": "https://woscontrol.com/kingdoms"
+    },
     "precision_values": {
       "exact": "Verified UTC timestamp",
       "date": "Verified calendar date; time is unknown"
@@ -24,6 +30,7 @@
     "4361": {"opened_utc":"2026-05-09T00:00:00Z","precision":"date","updated_utc":"2026-08-08"},
     "4367": {"opened_utc":"2026-05-11T00:00:00Z","precision":"date","updated_utc":"2026-08-08"},
     "4451": {"opened_utc":"2026-06-10T00:00:00Z","precision":"date","updated_utc":"2026-08-08"},
-    "4464": {"opened_utc":"2026-06-14T00:00:00Z","precision":"date","updated_utc":"2026-08-08"}
+    "4464": {"opened_utc":"2026-06-14T00:00:00Z","precision":"date","updated_utc":"2026-08-08"},
+    "4600": {"opened_utc":"2026-08-07T20:15:00Z","precision":"exact","updated_utc":"2026-08-08","source":"https://woscontrol.com/kingdoms"}
   }
 }
