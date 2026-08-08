@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "updated_utc": "2026-08-08",
+    "note": "Community-sourced State opening data. Date-only records are not exact UTC timestamps."
+  },
+  "states": {
+    "3581": {
+      "opened_utc": "2025-10-16T00:00:00Z",
+      "precision": "date"
+    },
+    "3952": {
+      "opened_utc": "2026-01-07T00:00:00Z",
+      "precision": "date"
+    },
+    "4152": {
+      "opened_utc": "2026-02-26T00:00:00Z",
+      "precision": "date"
+    },
+    "4246": {
+      "opened_utc": "2026-03-28T11:24:05Z",
+      "precision": "exact"
+    },
+    "4255": {
+      "opened_utc": "2026-03-30T00:00:00Z",
+      "precision": "date"
+    },
+    "4307": {
+      "opened_utc": "2026-04-20T00:00:00Z",
+      "precision": "date"
+    },
+    "4336": {
+      "opened_utc": "2026-04-30T00:00:00Z",
+      "precision": "date"
+    },
+    "4361": {
+      "opened_utc": "2026-05-09T00:00:00Z",
+      "precision": "date"
+    },
+    "4367": {
+      "opened_utc": "2026-05-11T00:00:00Z",
+      "precision": "date"
+    },
+    "4451": {
+      "opened_utc": "2026-06-10T00:00:00Z",
+      "precision": "date"
+    },
+    "4464": {
+      "opened_utc": "2026-06-14T00:00:00Z",
+      "precision": "date"
+    }
+  }
+}
