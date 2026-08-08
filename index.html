@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>寒霜工具站｜伺服器年齡追蹤器</title>
+<style>
+body{margin:0;background:#071426;color:#f4f8ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:900px;margin:auto;padding:25px 18px}
+header{padding:15px 18px;border-bottom:1px solid #284566;display:flex;align-items:center;gap:10px}
+select{margin-left:auto;background:#102643;color:white;border:1px solid #365a80;border-radius:10px;padding:8px}
+h1{font-size:36px;margin:35px 0 10px}
+.sub{color:#9fb5d2;line-height:1.6}
+.card{background:#102643;border:1px solid #294866;border-radius:18px;padding:20px;margin-top:18px}
+.row{display:flex;gap:10px;margin-top:15px}
+input,button{padding:13px;border-radius:10px;font-size:16px}
+input{flex:1;background:#07192e;color:white;border:1px solid #365a80}
+button{border:0;background:#65d4ff;color:#061321;font-weight:bold}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.result{margin-top:18px;padding:15px;background:#07192e;border-radius:12px}
+.timeline{margin-top:15px}
+.item{border-left:3px solid #365a80;padding:3px 0 18px 15px}
+.item.done{border-color:#65e6a5}
+.day{color:#65d4ff;font-size:12px}
+h3{margin:4px 0}
+.hidden{display:none}
+@media(max-width:600px){.row{flex-direction:column}.two{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+
+<body>
+
+<header>
+<strong>❄️ <span id="brand">寒霜工具站</span></strong>
+
+<select id="lang">
+<option value="zh">🇹🇼 繁體中文</option>
+<option value="cn">🇨🇳 简体中文</option>
+<option value="en">🇺🇸 English</option>
+<option value="es">🇪🇸 Español</option>
+<option value="ja">🇯🇵 日本語</option>
+<option value="ko">🇰🇷 한국어</option>
+<option value="th">🇹🇭 ไทย</option>
+<option value="vi">🇻🇳 Tiếng Việt</option>
+<option value="id">🇮🇩 Indonesia</option>
+</select>
+</header>
+
+<main>
+
+<h1 id="title">寒霜啟示錄<br>伺服器年齡追蹤器</h1>
+
+<p class="sub" id="intro">
+輸入 State 編號，查看伺服器年齡與主要解鎖時間。
+</p>
+
+<div class="card">
+
+<h2 id="searchTitle">查詢伺服器</h2>
+
+<div class="row">
+<input id="state" inputmode="numeric" placeholder="例如：3723">
+<button id="search">查詢</button>
+</div>
+
+<p class="sub" id="status">
+若無法自動取得資料，可手動輸入 UTC 開服時間。
+</p>
+
+<div class="two">
+<input id="date" type="date">
+<input id="time" type="time" value="00:00">
+</div>
+
+<div class="row">
+<button id="save">儲存開服時間</button>
+</div>
+
+<div id="result" class="result hidden">
+<div id="stateResult"></div>
+<h2 id="age"></h2>
+<div id="open"></div>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2 id="timelineTitle">伺服器解鎖時間軸</h2>
+
+<div id="timeline" class="timeline"></div>
+
+</div>
+
+<p class="sub" style="text-align:center;margin-top:30px">
+Unofficial fan tool · Not affiliated with Century Games
+</p>
+
+</main>
+
+<script>
+
+const milestones=[
+[0,"伺服器開放"],
+[40,"第二世代英雄"],
+[60,"火晶系統"],
+[120,"第三世代英雄"],
+[150,"進階火晶"],
+[195,"第四世代英雄"],
+[280,"第五世代英雄"],
+[315,"高階火晶"],
+[360,"第六世代英雄"],
+[500,"後期火晶"]
+];
+
+const translations={
+
+zh:{
+brand:"寒霜工具站",
+title:"寒霜啟示錄<br>伺服器年齡追蹤器",
+intro:"輸入 State 編號，查看伺服器年齡與主要解鎖時間。",
+search:"查詢伺服器",
+button:"查詢",
+status:"若無法自動取得資料，可手動輸入 UTC 開服時間。",
+save:"儲存開服時間",
+timeline:"伺服器解鎖時間軸",
+day:"第",
+days:"天",
+age:"伺服器年齡",
+open:"開服時間"
+},
+
+cn:{
+brand:"寒霜工具站",
+title:"寒霜启示录<br>服务器年龄追踪器",
+intro:"输入 State 编号，查看服务器年龄与主要解锁时间。",
+search:"查询服务器",
+button:"查询",
+status:"若无法自动取得数据，可手动输入 UTC 开服时间。",
+save:"保存开服时间",
+timeline:"服务器解锁时间轴",
+day:"第",
+days:"天",
+age:"服务器年龄",
+open:"开服时间"
+},
+
+en:{
+brand:"Frost Tools",
+title:"Whiteout Survival<br>State Age Tracker",
+intro:"Enter a State number to view its age and major unlock milestones.",
+search:"Search State",
+button:"Search",
+status:"If automatic data is unavailable, enter the UTC opening time manually.",
+save:"Save Opening Time",
+timeline:"State Unlock Timeline",
+day:"Day ",
+days:" days",
+age:"State Age",
+open:"Opening Time"
+},
+
+es:{
+brand:"Herramientas Frost",
+title:"Whiteout Survival<br>Rastreador de antigüedad",
+intro:"Introduce el número del Estado para ver su antigüedad y los principales desbloqueos.",
+search:"Buscar Estado",
+button:"Buscar",
+status:"Si no hay datos automáticos, introduce manualmente la hora UTC de apertura.",
+save:"Guardar hora",
+timeline:"Línea de tiempo",
+day:"Día ",
+days:" días",
+age:"Antigüedad",
+open:"Hora de apertura"
+}
+
+};
+
+["ja","ko","th","vi","id"].forEach(x=>translations[x]=translations.en);
+
+let language="zh";
+
+const $=x=>document.getElementById(x);
+
+function text(){
+const t=translations[language];
+
+$("brand").textContent=t.brand;
+$("title").innerHTML=t.title;
+$("intro").textContent=t.intro;
+$("searchTitle").textContent=t.search;
+$("search").textContent=t.button;
+$("status").textContent=t.status;
+$("save").textContent=t.save;
+$("timelineTitle").textContent=t.timeline;
+
+renderTimeline();
+}
+
+function database(){
+try{
+return JSON.parse(localStorage.whiteoutStates||"{}");
+}catch{
+return {};
+}
+}
+
+function render(state,date){
+
+const diff=Date.now()-date.getTime();
+const days=Math.max(0,Math.floor(diff/86400000));
+
+const t=translations[language];
+
+$("result").classList.remove("hidden");
+
+$("stateResult").textContent="State #"+state;
+
+$("age").textContent=t.age+"： "+days+t.days;
+
+$("open").textContent=
+t.open+"： "+date.toISOString().replace("T"," ").slice(0,16)+" UTC";
+
+renderTimeline(days);
+}
+
+function renderTimeline(age=-1){
+
+const box=$("timeline");
+box.innerHTML="";
+
+milestones.forEach(m=>{
+
+const div=document.createElement("div");
+
+div.className="item "+(age>=m[0]?"done":"");
+
+div.innerHTML=
+'<div class="day">'+
+translations[language].day+
+m[0]+
+'</div><h3>'+
+m[1]+
+'</h3>';
+
+box.appendChild(div);
+
+});
+
+}
+
+$("save").onclick=()=>{
+
+const state=$("state").value.trim();
+const date=$("date").value;
+const time=$("time").value||"00:00";
+
+if(!state||!date){
+alert("Please enter State and opening date");
+return;
+}
+
+const d=new Date(date+"T"+time+":00Z");
+
+const db=database();
+
+db[state]=d.toISOString();
+
+localStorage.whiteoutStates=JSON.stringify(db);
+
+render(state,d);
+
+};
+
+$("search").onclick=()=>{
+
+const state=$("state").value.trim();
+
+if(!state)return;
+
+const db=database();
+
+if(db[state]){
+
+const d=new Date(db[state]);
+
+$("date").value=d.toISOString().slice(0,10);
+$("time").value=d.toISOString().slice(11,16);
+
+render(state,d);
+
+}else{
+
+$("status").textContent=
+translations[language].status;
+
+}
+
+};
+
+$("lang").onchange=e=>{
+
+language=e.target.value;
+
+text();
+
+};
+
+const query=new URLSearchParams(location.search).get("state");
+
+if(query){
+
+$("state").value=query;
+
+$("search").click();
+
+}
+
+text();
+
+</script>
+
+</body>
+</html>
