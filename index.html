@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>寒霜工具站｜State Age Tracker</title>
+<style>
+body{margin:0;background:#071426;color:#f4f8ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+header{background:#0b1d33;border-bottom:1px solid #294866}
+nav,main{max-width:900px;margin:auto;padding:16px}
+nav{display:flex;align-items:center}
+select{margin-left:auto;background:#07192e;color:white;border:1px solid #365a80;border-radius:10px;padding:9px}
+h1{font-size:36px;line-height:1.1}
+.sub{color:#9fb5d2;line-height:1.6}
+.card{background:#102643;border:1px solid #294866;border-radius:18px;padding:20px;margin-top:18px}
+.row{display:flex;gap:10px}
+input,button{font:inherit;border-radius:10px;padding:12px}
+input{flex:1;background:#07192e;color:white;border:1px solid #365a80}
+button{border:0;background:#65d4ff;font-weight:bold}
+.result{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:#07192e;border:1px solid #294866;border-radius:12px;padding:13px}
+.full{grid-column:1/-1}
+.k{font-size:12px;color:#9fb5d2}
+.v{font-size:18px;font-weight:bold;margin-top:4px}
+.hidden{display:none}
+.item{padding:10px 0;border-bottom:1px solid #294866}
+.done{color:#65e6a5}
+.next{color:#65d4ff}
+.badge{display:inline-block;margin-top:8px;padding:5px 9px;border-radius:20px;background:#07192e;color:#65d4ff}
+@media(max-width:600px){.row{flex-direction:column}.result{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body>
+
+<header>
+<nav>
+<strong>❄️ <span id="brand">寒霜工具站</span></strong>
+<select id="lang">
+<option value="zh-TW">🇹🇼 繁體中文</option>
+<option value="zh-CN">🇨🇳 简体中文</option>
+<option value="en">🇺🇸 English</option>
+<option value="es">🇪🇸 Español</option>
+</select>
+</nav>
+</header>
+
+<main>
+<h1 id="title">寒霜啟示錄<br>伺服器年齡追蹤器</h1>
+<p id="intro" class="sub">輸入 State 編號，自動查詢開服資料與目前進度。</p>
+
+<div class="card">
+<h2 id="searchTitle">查詢伺服器</h2>
+
+<div class="row">
+<input id="state" inputmode="numeric" placeholder="例如：4246">
+<button id="searchBtn">查詢</button>
+</div>
+
+<p id="status" class="sub">等待查詢</p>
+<div id="badge" class="badge hidden"></div>
+
+<div id="manual" class="hidden">
+<p id="manualText" class="sub">資料庫尚未收錄，可手動輸入 UTC 開服時間：</p>
+<div class="row">
+<input id="date" type="date">
+<input id="time" type="time" value="00:00">
+<button id="saveBtn">儲存</button>
+</div>
+</div>
+
+<div id="result" class="result hidden">
+<div class="metric">
+<div class="k">State</div>
+<div class="v" id="stateV"></div>
+</div>
+
+<div class="metric">
+<div class="k" id="ageK">伺服器年齡</div>
+<div class="v" id="ageV"></div>
+</div>
+
+<div class="metric full">
+<div class="k" id="openK">開服時間（UTC）</div>
+<div class="v" id="openV"></div>
+</div>
+
+<div class="metric full">
+<div class="k" id="phaseK">目前階段</div>
+<div class="v" id="phaseV"></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2 id="timelineTitle">解鎖時間軸</h2>
+<p id="note" class="sub">實際開放時間可能因 State 或官方調整略有差異。</p>
+<div id="timeline"></div>
+</div>
+</main>
+
+<script>
+const milestones=[
+[0,"S1 英雄","S1 Heroes"],
+[14,"凍土","Tundra"],
+[39,"肥沃之地","Fertile Land"],
+[40,"S2 英雄","Gen 2 Heroes"],
+[53,"王城","Sunfire Castle"],
+[54,"第一批寵物","Pet Gen 1"],
+[60,"火晶 1–3","Fire Crystal 1–3"],
+[80,"SVS／凍土之王","SVS / KOI"],
+[90,"第二批寵物","Pet Gen 2"],
+[120,"S3 英雄","Gen 3 Heroes"],
+[140,"第三批寵物","Pet Gen 3"],
+[150,"火晶 4–5","Fire Crystal 4–5"],
+[180,"傳說領主裝備","Legendary Chief Gear"],
+[195,"S4 英雄","Gen 4 Heroes"],
+[200,"第四批寵物","Pet Gen 4"],
+[220,"戰爭學院／T11","War Academy / T11"],
+[270,"S5 英雄","Gen 5 Heroes"],
+[280,"第五批寵物","Pet Gen 5"],
+[315,"火晶 6–8","Fire Crystal 6–8"],
+[360,"S6 英雄","Gen 6 Heroes"],
+[370,"猛獁象","Mammoth"],
+[440,"S7 英雄","Gen 7 Heroes"],
+[500,"火晶 9–10","Fire Crystal 9–10"],
+[520,"S8 英雄","Gen 8 Heroes"],
+[600,"S9 英雄","Gen 9 Heroes"],
+[700,"S10 英雄","Gen 10 Heroes"],
+[800,"S11 英雄","Gen 11 Heroes"],
+[870,"S12 英雄","Gen 12 Heroes"],
+[951,"S13 英雄","Gen 13 Heroes"]
+];
+
+const words={
+"zh-TW":{
+brand:"寒霜工具站",
+title:"寒霜啟示錄<br>伺服器年齡追蹤器",
+intro:"輸入 State 編號，自動查詢開服資料與目前進度。",
+search:"查詢伺服器",button:"查詢",
+wait:"等待查詢",loading:"正在讀取 State 資料庫…",
+found:"已找到 State 資料",
+missing:"資料庫尚未收錄此 State",
+manual:"資料庫尚未收錄，可手動輸入 UTC 開服時間：",
+save:"儲存",age:"伺服器年齡",open:"開服時間（UTC）",
+phase:"目前階段",timeline:"解鎖時間軸",
+note:"實際開放時間可能因 State 或官方調整略有差異。",
+days:"天",exact:"精確 UTC 時間",date:"日期資料"
+},
+"zh-CN":{
+brand:"寒霜工具站",
+title:"寒霜启示录<br>服务器年龄追踪器",
+intro:"输入 State 编号，自动查询开服资料与当前进度。",
+search:"查询服务器",button:"查询",
+wait:"等待查询",loading:"正在读取 State 数据库…",
+found:"已找到 State 数据",
+missing:"数据库尚未收录此 State",
+manual:"数据库尚未收录，可手动输入 UTC 开服时间：",
+save:"保存",age:"服务器年龄",open:"开服时间（UTC）",
+phase:"当前阶段",timeline:"解锁时间轴",
+note:"实际开放时间可能因 State 或官方调整略有差异。",
+days:"天",exact:"精确 UTC 时间",date:"日期数据"
+},
+"en":{
+brand:"Frost Tools",
+title:"Whiteout Survival<br>State Age Tracker",
+intro:"Enter a State number to check its opening data and current progress.",
+search:"Search State",button:"Search",
+wait:"Waiting",loading:"Loading State database…",
+found:"State found",
+missing:"State not yet listed",
+manual:"State not listed. Enter its UTC opening time:",
+save:"Save",age:"State age",open:"Opening time (UTC)",
+phase:"Current phase",timeline:"Unlock timeline",
+note:"Actual unlock dates may vary by State or official adjustments.",
+days:"days",exact:"Exact UTC time",date:"Date-level data"
+},
+"es":{
+brand:"Herramientas Frost",
+title:"Whiteout Survival<br>Rastreador de antigüedad",
+intro:"Introduce un Estado para consultar su apertura y progreso actual.",
+search:"Buscar Estado",button:"Buscar",
+wait:"Esperando",loading:"Cargando base de datos…",
+found:"Estado encontrado",
+missing:"Estado aún no registrado",
+manual:"Estado no registrado. Introduce su hora UTC de apertura:",
+save:"Guardar",age:"Antigüedad",open:"Apertura (UTC)",
+phase:"Fase actual",timeline:"Cronología de desbloqueo",
+note:"Las fechas pueden variar según el Estado o ajustes oficiales.",
+days:"días",exact:"Hora UTC exacta",date:"Datos por fecha"
+}
+};
+
+let language=localStorage.getItem("wosLang")||"zh-TW";
+let database=null;
+
+const $=x=>document.getElementById(x);
+const w=x=>words[language][x];
+
+function applyLanguage(){
+$("lang").value=language;
+$("brand").textContent=w("brand");
+$("title").innerHTML=w("title");
+$("intro").textContent=w("intro");
+$("searchTitle").textContent=w("search");
+$("searchBtn").textContent=w("button");
+$("manualText").textContent=w("manual");
+$("saveBtn").textContent=w("save");
+$("ageK").textContent=w("age");
+$("openK").textContent=w("open");
+$("phaseK").textContent=w("phase");
+$("timelineTitle").textContent=w("timeline");
+$("note").textContent=w("note");
+renderTimeline();
+}
+
+async function getDatabase(){
+if(database)return database;
+$("status").textContent=w("loading");
+
+try{
+const response=await fetch("./states.json?"+Date.now());
+if(!response.ok)throw new Error();
+database=await response.json();
+}catch{
+database={states:{}};
+}
+
+return database;
+}
+
+function manualStates(){
+try{
+return JSON.parse(localStorage.getItem("manualStates")||"{}");
+}catch{
+return {};
+}
+}
+
+function currentPhase(age){
+let found=milestones[0];
+for(const m of milestones){
+if(age>=m[0])found=m;
+else break;
+}
+return found;
+}
+
+function renderTimeline(age=-1){
+$("timeline").innerHTML="";
+
+let nextFound=false;
+
+milestones.forEach(m=>{
+const div=document.createElement("div");
+div.className="item";
+
+if(age>=m[0])div.classList.add("done");
+else if(!nextFound){
+div.classList.add("next");
+nextFound=true;
+}
+
+const name=(language==="zh-TW"||language==="zh-CN")?m[1]:m[2];
+
+div.innerHTML="<strong>Day "+m[0]+" · "+name+"</strong>";
+$("timeline").appendChild(div);
+});
+}
+
+function showResult(state,date){
+const age=Math.max(0,(Date.now()-date.getTime())/86400000);
+const p=currentPhase(age);
+
+$("result").classList.remove("hidden");
+$("stateV").textContent="#"+state;
+$("ageV").textContent=Math.floor(age)+" "+w("days");
+$("openV").textContent=date.toISOString().replace("T"," ").slice(0,19)+" UTC";
+$("phaseV").textContent=
+(language==="zh-TW"||language==="zh-CN")?p[1]:p[2];
+
+renderTimeline(age);
+}
+
+async function lookup(){
+const state=$("state").value.trim();
+if(!/^\d+$/.test(state))return;
+
+const db=await getDatabase();
+const record=db.states?.[state];
+const saved=manualStates()[state];
+
+$("manual").classList.add("hidden");
+
+if(record){
+$("status").textContent=w("found");
+$("badge").classList.remove("hidden");
+$("badge").textContent=
+record.precision==="exact"?w("exact"):w("date");
+
+showResult(state,new Date(record.opened_utc));
+return;
+}
+
+if(saved){
+$("status").textContent=w("found");
+$("badge").classList.remove("hidden");
+$("badge").textContent="Local";
+showResult(state,new Date(saved));
+return;
+}
+
+$("status").textContent=w("missing");
+$("badge").classList.add("hidden");
+$("result").classList.add("hidden");
+$("manual").classList.remove("hidden");
+}
+
+$("searchBtn").onclick=lookup;
+
+$("state").addEventListener("keydown",e=>{
+if(e.key==="Enter")lookup();
+});
+
+$("saveBtn").onclick=()=>{
+const state=$("state").value.trim();
+const date=$("date").value;
+const time=$("time").value||"00:00";
+
+if(!state||!date)return;
+
+const d=new Date(date+"T"+time+":00Z");
+const saved=manualStates();
+
+saved[state]=d.toISOString();
+localStorage.setItem("manualStates",JSON.stringify(saved));
+
+$("manual").classList.add("hidden");
+showResult(state,d);
+};
+
+$("lang").onchange=e=>{
+language=e.target.value;
+localStorage.setItem("wosLang",language);
+applyLanguage();
+};
+
+applyLanguage();
+
+const query=new URLSearchParams(location.search).get("state");
+
+if(query){
+$("state").value=query;
+lookup();
+}
+</script>
+
+</body>
+</html>
